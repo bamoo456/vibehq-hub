@@ -220,7 +220,8 @@ export function Terminal({ team, agentName, isRunning }: Props) {
             wsRef.current.close();
         }
 
-        const ws = connectTerminal(team, agentName);
+        connectTerminal(team, agentName).then(ws => {
+        if (unmountedRef.current) { ws.close(); return; }
         wsRef.current = ws;
 
         ws.onopen = () => {
@@ -263,6 +264,7 @@ export function Terminal({ team, agentName, isRunning }: Props) {
                 ws.send(data);
             }
         });
+        }); // end connectTerminal().then()
     }, [team, agentName]);
 
     const handleReconnect = useCallback(() => {

@@ -1,12 +1,27 @@
-export function connectTerminal(team: string, agentName: string): WebSocket {
+async function getWsToken(): Promise<string | null> {
+    try {
+        const res = await fetch('/api/ws-token');
+        if (!res.ok) return null;
+        const { token } = await res.json();
+        return token;
+    } catch {
+        return null;
+    }
+}
+
+export async function connectTerminal(team: string, agentName: string): Promise<WebSocket> {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const url = `${proto}//${location.host}/ws/terminal/${encodeURIComponent(team)}/${encodeURIComponent(agentName)}`;
+    let url = `${proto}//${location.host}/ws/terminal/${encodeURIComponent(team)}/${encodeURIComponent(agentName)}`;
+    const token = await getWsToken();
+    if (token) url += `?token=${encodeURIComponent(token)}`;
     return new WebSocket(url);
 }
 
-export function connectHubEvents(team: string, onMessage: (msg: any) => void): WebSocket {
+export async function connectHubEvents(team: string, onMessage: (msg: any) => void): Promise<WebSocket> {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const url = `${proto}//${location.host}/ws/events/${encodeURIComponent(team)}`;
+    let url = `${proto}//${location.host}/ws/events/${encodeURIComponent(team)}`;
+    const token = await getWsToken();
+    if (token) url += `?token=${encodeURIComponent(token)}`;
     const ws = new WebSocket(url);
 
     ws.onmessage = (event) => {
