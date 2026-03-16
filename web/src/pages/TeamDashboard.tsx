@@ -112,7 +112,9 @@ export function TeamDashboard() {
     // Hub events WebSocket
     useEffect(() => {
         if (!name) return;
-        const ws = connectHubEvents(name, (msg) => {
+        let ws: WebSocket | null = null;
+        let cancelled = false;
+        connectHubEvents(name, (msg) => {
             if (msg.type === 'agent:status:broadcast') {
                 setLiveAgents(prev => {
                     const next = new Map(prev);
@@ -127,8 +129,11 @@ export function TeamDashboard() {
                 });
             }
             setTick(t => t + 1);
+        }).then(socket => {
+            if (cancelled) { socket.close(); return; }
+            ws = socket;
         });
-        return () => ws.close();
+        return () => { cancelled = true; ws?.close(); };
     }, [name]);
 
     if (!name || !team) return <div style={{ color: '#8b949e' }}>Loading...</div>;
